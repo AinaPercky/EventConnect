@@ -128,63 +128,79 @@ export default function Dashboard() {
       format: 'a4'
     });
 
-    const badgeWidth = 85;
-    const badgeHeight = 55;
-    const marginX = 20;
-    const marginY = 20;
-    const spaceX = 10;
-    const spaceY = 10;
-    
-    let x = marginX;
-    let y = marginY;
+    const badgeWidth = 92;
+    const badgeHeight = 56;
+    const marginX = 10;
+    const marginY = 5;
+    const spaceX = 6;
+    const spaceY = 2;
 
     for (let i = 0; i < list.length; i++) {
       const p = list[i];
+      const pageIndex = i % 10;
+      const col = pageIndex % 2;
+      const row = Math.floor(pageIndex / 2);
       
-      // Draw Badge Border
-      doc.setDrawColor(200, 200, 200);
-      doc.roundedRect(x, y, badgeWidth, badgeHeight, 3, 3);
+      if (i > 0 && pageIndex === 0) {
+        doc.addPage();
+      }
+
+      const x = marginX + col * (badgeWidth + spaceX);
+      const y = marginY + row * (badgeHeight + spaceY);
+      
+      // Draw Badge Background and Border
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, badgeWidth, badgeHeight, 3, 3, 'FD');
       
       // Top header color band
       doc.setFillColor(37, 99, 235); // Blue-600
-      doc.roundedRect(x, y, badgeWidth, 12, 3, 3, 'F');
+      doc.roundedRect(x, y, badgeWidth, 15, 3, 3, 'F');
+      doc.rect(x, y + 7, badgeWidth, 8, 'F'); // Flatten bottom corners
       
+      // Header text
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text("ÉVÈNEMENT OFFICIEL", x + badgeWidth / 2, y + 8, { align: 'center' });
+      doc.text("EVENTCONNECT", x + badgeWidth / 2, y + 10, { align: 'center' });
       
-      doc.setTextColor(15, 23, 42); // Slate-900
-      doc.setFontSize(14);
-      doc.text(`${p.firstName} ${p.lastName}`, x + 5, y + 25);
+      // Participant Name
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.setFontSize(15);
+      let displayName = `${p.firstName} ${p.lastName}`;
+      if (displayName.length > 16) doc.setFontSize(12);
+      if (displayName.length > 25) displayName = displayName.substring(0, 23) + '...';
+      doc.text(displayName, x + 8, y + 27);
       
+      // Organization
       if (p.organization) {
-        doc.setTextColor(100, 116, 139); // Slate-500
+        doc.setTextColor(100, 116, 139); // slate-500
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(p.organization, x + 5, y + 32);
+        doc.setFont('helvetica', 'bold');
+        let orgName = p.organization.toUpperCase();
+        if (orgName.length > 22) orgName = orgName.substring(0, 20) + '...';
+        doc.text(orgName, x + 8, y + 33.5);
       }
+      
+      // Badge Category (Role)
+      doc.setFillColor(241, 245, 249); // slate-100
+      doc.roundedRect(x + 8, y + 44, 38, 6.5, 1, 1, 'F');
+      doc.setTextColor(71, 85, 105); // slate-600
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text("PARTICIPANT", x + 8 + 19, y + 48.5, { align: 'center' });
       
       // Generate QR
       const scanUrl = `${window.location.origin}/scan?token=${p.qrCodeToken}`;
-      const qrData = await QRCode.toDataURL(scanUrl, { width: 100, margin: 1 });
+      const qrData = await QRCode.toDataURL(scanUrl, { 
+        width: 120, 
+        margin: 0, 
+        color: { dark: '#0F172A', light: '#FFFFFF' }
+      });
       // Add QR image to PDF
-      doc.addImage(qrData, 'PNG', x + badgeWidth - 35, y + 18, 30, 30);
-      
-      // Move to next position (2 columns grid)
-      if (x === marginX) {
-        x += badgeWidth + spaceX;
-      } else {
-        x = marginX;
-        y += badgeHeight + spaceY;
-      }
-      
-      // Add new page if out of space
-      if (y + badgeHeight > 297 - marginY && i < list.length - 1) {
-        doc.addPage();
-        x = marginX;
-        y = marginY;
-      }
+      const qrSize = 32;
+      doc.addImage(qrData, 'PNG', x + badgeWidth - qrSize - 8, y + 19, qrSize, qrSize);
     }
     
     doc.save("badges.pdf");
