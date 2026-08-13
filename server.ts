@@ -8,9 +8,8 @@ import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser } from "./src/db/users.ts";
 import { randomUUID } from "crypto";
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -161,6 +160,8 @@ async function startServer() {
     });
   });
 
+// Setup frontend serving and start server
+async function start() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -181,4 +182,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  start();
+}
+
+export default app;
